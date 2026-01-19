@@ -1,0 +1,1 @@
+This is a final year project that implements an unsupervised image clustering system using pretrained convolutional neural network embeddings to group visually similar images without labelled supervision
