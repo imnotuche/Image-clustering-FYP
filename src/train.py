@@ -1,44 +1,62 @@
 import torch
 import torch.optim as optim
-from dec_model import DEC
+import numpy as np
+from sklearn.cluster import KMeans
+from src.dec_model import DEC
 
 def target_distribution(q):
-    """
-    The 'P' distribution in DEC. 
-    It takes the soft assignments (q) and squares them to make the 
-    highest probabilities even stronger.
-    """
     weight = q**2 / q.sum(0)
     return (weight.t() / weight.sum(1)).t()
 
 def train_dec(dataloader, n_clusters=10, epochs=50):
-    # 1. Initialize our Brain
-    model = DEC(n_clusters=n_clusters)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = DEC(n_clusters=n_clusters).to(device)
+    
+    # --- STAGE 1: FEATURE CACHING & K-MEANS ---
+    # We run the images through ResNet ONCE to get the 'clouds'
+    print("Extracting features and initializing clusters with K-Means...")
+    features_list = []
+    with torch.no_grad():
+        for images in dataloader:
+            features = model.feature_extractor(images.to(device))
+            features_list.append(features.cpu())
+    
+    all_features = torch.cat(features_list).numpy()
+    
+    # Find the 'densest clouds' to avoid the Zero Loss problem
+    kmeans = KMeans(n_clusters=n_clusters, n_init=20)
+    y_pred = kmeans.fit_predict(all_features)
+    
+    # Set the model's cluster centers to the K-Means centers
+    initial_centers = torch.tensor(kmeans.cluster_centers_, dtype=torch.float).to(device)
+    model.clustering_layer.centers.data = initial_centers
+    
+    # --- STAGE 2: DEC TRAINING ---
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     criterion = torch.nn.KLDivLoss(reduction='batchmean')
 
     model.train()
+    print("Starting Deep Clustering refinement...")
     
     for epoch in range(epochs):
-        for images, labels in dataloader:
-            # Clear previous gradients
+        total_loss = 0
+        for images, _ in dataloader:
+            images = images.to(device)
             optimizer.zero_grad()
             
-            # Forward pass: Get soft assignments (q)
+            # Forward pass
             q = model(images)
             
-            # Calculate the target distribution (p)
-            # This is the "Gold Standard" the model tries to reach
+            # Sharpen the distribution
             p = target_distribution(q).detach()
             
-            # Calculate Loss (KL Divergence)
-            # This measures the distance between 'q' and 'p'
+            # Calculate how far we are from our 'sharpened' goal
             loss = criterion(q.log(), p)
-            
-            # Backward pass: Update the weights and cluster centers
             loss.backward()
             optimizer.step()
             
-        print(f"Epoch {epoch+1}/{epochs}, Loss: {loss.item():.4f}")
+            total_loss += loss.item()
+            
+        print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss/len(dataloader):.4f}")
     
     return model
