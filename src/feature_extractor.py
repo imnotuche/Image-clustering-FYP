@@ -20,7 +20,6 @@ class FeatureExtractor(nn.Module):
 
     def get_or_create_embeddings(self, dataloader, save_path="../embeddings/cifar10_embeddings.pt"):
         """
-        The Refactored Logic:
         Check for local file -> If found, load it.
         If not found -> Extract from ResNet and save it.
         """
