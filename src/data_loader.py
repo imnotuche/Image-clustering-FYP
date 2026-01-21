@@ -21,7 +21,7 @@ def get_dataloader(batch_size=64):
     # 'train=False' loads the test set (10,000 images), which is great for testing
     dataset = datasets.CIFAR10(
         root='../data/cifar10', 
-        train=False, 
+        train=True, 
         download=True, 
         transform=transform
     )
