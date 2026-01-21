@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 import numpy as np
 from sklearn.cluster import KMeans
-from src.dec_model import DEC
+from dec_model import DEC
 
 def target_distribution(q):
     weight = q**2 / q.sum(0)
