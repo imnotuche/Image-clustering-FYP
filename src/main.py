@@ -1,49 +1,58 @@
 import torch
+import numpy as np
 from data_loader import get_dataloader
 from train import train_dec
 from utils import evaluate_clustering
 
 def main():
-    # 1. Configuration
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Starting experiment on: {device}")
     
-    # 2. Load the Data (CIFAR-10)
-    # We only need the training loader for this unsupervised task
+    # 1. Load the Data
     train_loader = get_dataloader(batch_size=64)
     
-    # 3. Train the Model
-    # This runs the Feature Extraction + DEC Clustering loop
+    # 2. Train the Model
+    # Note: Ensure train_dec returns the model AND the processed features/labels
     print("Training DEC model...")
-    trained_model = train_dec(train_loader, n_clusters=10, epochs=10)
+    trained_model = train_dec(train_loader, n_clusters=10, embedding_dim=50, epochs=10)
     
+    # 3. Load the Reduced Features for Evaluation
+    # Since train_dec saved them to disk, let's grab them
+    print("Loading reduced features for evaluation...")
+    # Using weights_only=False because of the NumPy data inside the .pt file
+    data = torch.load("./embeddings/cifar10_reduced.pt", weights_only=False)
+    
+    # If you saved it as a dict, unpack it. If just a tensor, use it directly.
+    if isinstance(data, dict):
+        features_cat = data['features']
+        labels_cat = data['labels']
+    else:
+        features_cat = data
+        # You'll need to get labels from your extractor or original loader
+        # Let's assume you returned labels from train_dec or saved them
+        labels_cat = torch.load("./embeddings/cifar10_embeddings.pt", weights_only=False)['labels']
+
     # 4. Final Evaluation
     print("Evaluating clusters...")
     trained_model.eval()
-    all_features = []
-    all_predictions = []
-    all_labels = []
-
+    
+    if isinstance(features_cat, np.ndarray):
+        features_cat = torch.from_numpy(features_cat).float()
+    
     with torch.no_grad():
-        for images, labels in train_loader:
-            # Extract features and get cluster predictions
-            features = trained_model.feature_extractor(images)
-            q = trained_model.clustering_layer(features)
-            
-            # The cluster with the highest probability is our prediction
-            preds = torch.argmax(q, dim=1)
-            
-            all_features.append(features)
-            all_predictions.append(preds)
-            all_labels.append(labels)
-
-    # Convert lists to large arrays for the utility functions
-    features_cat = torch.cat(all_features).cpu().numpy()
-    preds_cat = torch.cat(all_predictions).cpu().numpy()
-    labels_cat = torch.cat(all_labels).cpu().numpy()
+        # Move features to device and get 'q' (cluster probabilities)
+        q = trained_model(features_cat.to(device))
+        
+        # Get the cluster with the highest probability
+        preds_cat = torch.argmax(q, dim=1).cpu().numpy()
 
     # 5. Calculate Metrics
-    metrics = evaluate_clustering(features_cat, preds_cat, labels_cat)
+    # Convert tensors to numpy for sklearn-based metrics in utils
+    metrics = evaluate_clustering(
+        features_cat.cpu().numpy(), 
+        preds_cat, 
+        labels_cat.cpu().numpy()
+    )
     
     print("\n--- Experiment Results ---")
     print(f"Silhouette Score: {metrics['silhouette']:.4f}")

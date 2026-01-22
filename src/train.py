@@ -1,27 +1,35 @@
 import torch
 import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from sklearn.cluster import KMeans
 from dec_model import DEC
+from feature_extractor import FeatureExtractor
+from dimension_reduction import get_reduced_features
 
 def target_distribution(q):
     weight = q**2 / q.sum(0)
     return (weight.t() / weight.sum(1)).t()
 
-def train_dec(dataloader, n_clusters=10, epochs=50):
+def train_dec(dataloader, n_clusters=10, embedding_dim=50, epochs=50):
+    
+    #raw embeddings and dimensionally reduced embeddings path
+    raw_embeddings_path="./embeddings/cifar10_embeddings.pt"
+    reduced_embeddings_path="./embeddings/cifar10_reduced.pt"
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = DEC(n_clusters=n_clusters).to(device)
+    model = DEC(n_clusters=n_clusters, embedding_dim=embedding_dim).to(device)
     
-    # --- STAGE 1: FEATURE CACHING & K-MEANS ---
-    # We run the images through ResNet ONCE to get the 'clouds'
-    print("Extracting features and initializing clusters with K-Means...")
-    features_list = []
-    with torch.no_grad():
-        for images in dataloader:
-            features = model.feature_extractor(images.to(device))
-            features_list.append(features.cpu())
+    #extract embeddings and reduce dimensions
+    extractor=FeatureExtractor()
+    raw_features, labels = extractor.get_or_create_embeddings(dataloader=dataloader, save_path=raw_embeddings_path)
+    reduced_features=get_reduced_features(raw_features=raw_features, save_path=reduced_embeddings_path, n_dims=embedding_dim)
     
-    all_features = torch.cat(features_list).numpy()
+    # Ensure reduced_features is a tensor
+    if isinstance(reduced_features, np.ndarray):
+        reduced_features = torch.from_numpy(reduced_features).float()
+        
+    all_features = reduced_features.numpy()
     
     # Find the 'densest clouds' to avoid the Zero Loss problem
     kmeans = KMeans(n_clusters=n_clusters, n_init=20)
@@ -35,26 +43,29 @@ def train_dec(dataloader, n_clusters=10, epochs=50):
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     criterion = torch.nn.KLDivLoss(reduction='batchmean')
 
+        
+    feature_dataset = TensorDataset(reduced_features)
+    feature_loader = DataLoader(feature_dataset, batch_size=64, shuffle=True)
+    
     model.train()
     print("Starting Deep Clustering refinement...")
     
     for epoch in range(epochs):
         total_loss = 0
-        for images, _ in dataloader:
-            images = images.to(device)
+        
+        for batch in feature_loader:
+            batch_data = batch[0].to(device)
+            
             optimizer.zero_grad()
             
-            # Forward pass
-            q = model(images)
+            # Forward pass: model now takes 50-dim features directly
+            q = model(batch_data) 
             
-            # Sharpen the distribution
             p = target_distribution(q).detach()
-            
-            # Calculate how far we are from our 'sharpened' goal
             loss = criterion(q.log(), p)
+            
             loss.backward()
             optimizer.step()
-            
             total_loss += loss.item()
             
         print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss/len(dataloader):.4f}")

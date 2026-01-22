@@ -18,10 +18,11 @@ class FeatureExtractor(nn.Module):
             features = self.feature_layer(x)
         return features.view(features.size(0), -1)
 
-    def get_or_create_embeddings(self, dataloader, save_path="../embeddings/cifar10_embeddings.pt"):
+    def get_or_create_embeddings(self, dataloader, save_path):
         """
-        Check for local file -> If found, load it.
-        If not found -> Extract from ResNet and save it.
+        Check for local file: 
+        If found, load it.
+        If not found, Extract from ResNet and save it.
         """
         if os.path.exists(save_path):
             print(f"--- Found local embeddings at {save_path}. Loading... ---")
