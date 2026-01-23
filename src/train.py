@@ -45,7 +45,7 @@ def train_dec(dataloader, n_clusters=10, embedding_dim=50, epochs=50):
 
         
     feature_dataset = TensorDataset(reduced_features)
-    feature_loader = DataLoader(feature_dataset, batch_size=64, shuffle=True)
+    feature_loader = DataLoader(feature_dataset, batch_size=128, shuffle=True)
     
     model.train()
     print("Starting Deep Clustering refinement...")
@@ -58,7 +58,6 @@ def train_dec(dataloader, n_clusters=10, embedding_dim=50, epochs=50):
             
             optimizer.zero_grad()
             
-            # Forward pass: model now takes 50-dim features directly
             q = model(batch_data) 
             
             p = target_distribution(q).detach()

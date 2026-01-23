@@ -9,7 +9,7 @@ def main():
     print(f"Starting experiment on: {device}")
     
     # 1. Load the Data
-    train_loader = get_dataloader(batch_size=64)
+    train_loader = get_dataloader(batch_size=128)
     
     # 2. Train the Model
     # Note: Ensure train_dec returns the model AND the processed features/labels
@@ -51,7 +51,8 @@ def main():
     metrics = evaluate_clustering(
         features_cat.cpu().numpy(), 
         preds_cat, 
-        labels_cat.cpu().numpy()
+        labels_cat.cpu().numpy(),
+        sample_size=5000
     )
     
     print("\n--- Experiment Results ---")
