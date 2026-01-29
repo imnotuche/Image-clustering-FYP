@@ -59,6 +59,23 @@ def main():
     print(f"Silhouette Score: {metrics['silhouette']:.4f}")
     print(f"NMI: {metrics['nmi']:.4f}")
     print(f"ARI: {metrics['ari']:.4f}")
+    
+    # Save the model weights
+    model_path = "./models/dec_model_final.pth"
+    torch.save(trained_model.state_dict(), model_path)
+    print(f"Model saved to {model_path}")
+    
+    # Create a results dictionary
+    results = {
+        'predictions': preds_cat,
+        'labels': labels_cat,
+        'metrics': metrics
+    }
+
+    # Save using torch.save or pickle
+    results_path = "./results/experiment_results.pt"
+    torch.save(results, results_path)
+    print(f"Experiment results saved to {results_path}")
 
 if __name__ == "__main__":
     main()

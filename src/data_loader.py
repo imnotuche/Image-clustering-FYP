@@ -2,7 +2,7 @@ import torch
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
-def get_dataloader(batch_size=64):
+def get_dataloader(batch_size=64, train=True, shuffle=False):
     """
     Prepares and returns the CIFAR-10 data loader.
     Includes resizing and normalization for ResNet-50 compatibility.
@@ -18,14 +18,13 @@ def get_dataloader(batch_size=64):
     ])
     
     # Load the CIFAR-10 dataset
-    # 'train=False' loads the test set (10,000 images), which is great for testing
     dataset = datasets.CIFAR10(
         root='../data/cifar10', 
-        train=True, 
+        train=train, 
         download=True, 
         transform=transform
     )
     
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
     
     return loader
