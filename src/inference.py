@@ -3,7 +3,7 @@ import joblib
 import numpy as np
 from dec_model import DEC
 
-def run_inference(dataloader, feature_extractor, device, model_path, pca_model_path, limit=1000):
+def run_inference(dataloader, feature_extractor, device, model_path, pca_model_path, limit=None):
     # 1. Load the model expecting 2048 (matches your saved weights)
     dec_model = DEC(n_clusters=10, embedding_dim=2048).to(device)
     dec_model.load_state_dict(torch.load(model_path, map_location=device))
@@ -19,7 +19,7 @@ def run_inference(dataloader, feature_extractor, device, model_path, pca_model_p
     print(f"Running inference on {limit} unseen images (Direct 2048-dim mode)...")
     with torch.no_grad():
         for images, _ in dataloader:
-            if total_count >= limit:
+            if limit is not None and total_count >= limit:
                 break
                 
             images = images.to(device)
@@ -39,7 +39,12 @@ def run_inference(dataloader, feature_extractor, device, model_path, pca_model_p
             
             total_count += images.size(0)
 
-    final_preds = np.concatenate(all_preds)[:limit]
-    final_images = torch.cat(all_images)[:limit]
+    if limit is not None:
+        final_preds = np.concatenate(all_preds) [:limit]
+        final_images = torch.cat(all_images)[:limit]
+    else:
+        final_preds = np.concatenate(all_preds)
+        final_images = torch.cat(all_images)
+    
 
     return final_preds, final_images

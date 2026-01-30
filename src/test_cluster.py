@@ -8,7 +8,7 @@ from feature_extractor import FeatureExtractor
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load the test set
-test_loader = get_dataloader(batch_size=128, train=False, shuffle=True) 
+test_loader = get_dataloader(batch_size=128, train=False, shuffle=True, mode="local", local_path="./data/high-res-test/random-objects") 
 
 # Initialize Feature Extractor
 feature_extractor = FeatureExtractor()
@@ -20,7 +20,6 @@ predictions, raw_images = run_inference(
     device, 
     model_path="./models/dec_model_final.pth", 
     pca_model_path="./models/pca_model.pkl",
-    limit=1000  # <--- This stops it at 1000 images
 )
 
 # 3. Prove it worked!
