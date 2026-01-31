@@ -17,6 +17,7 @@ def run_inference(dataloader, feature_extractor, device, model_path, pca_model_p
     
     all_preds = []
     all_images = []
+    all_probs=[]
     total_count = 0
 
     print(f"Running inference on {limit} unseen images (Direct 2048-dim mode)...")
@@ -41,15 +42,17 @@ def run_inference(dataloader, feature_extractor, device, model_path, pca_model_p
             
             all_preds.append(preds.cpu().numpy())
             all_images.append(images.cpu())
+            all_probs.append(q.cpu().numpy())
             
             total_count += images.size(0)
 
     if limit is not None:
         final_preds = np.concatenate(all_preds) [:limit]
         final_images = torch.cat(all_images)[:limit]
+        final_probs = np.concatenate(all_probs)[:limit]
     else:
         final_preds = np.concatenate(all_preds)
         final_images = torch.cat(all_images)
-    
+        final_probs = np.concatenate(all_probs)
 
-    return final_preds, final_images
+    return final_preds, final_images, final_probs

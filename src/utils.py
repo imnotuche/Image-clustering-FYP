@@ -2,7 +2,6 @@ import numpy as np
 from sklearn.metrics import silhouette_score, adjusted_rand_score, normalized_mutual_info_score
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
-import torch
 
 def evaluate_clustering(features, predicted_labels, true_labels=None, sample_size=5000):
     """
@@ -24,6 +23,7 @@ def evaluate_clustering(features, predicted_labels, true_labels=None, sample_siz
         
     return results
 
+
 def plot_clusters(features, labels, title):
     print("Running t-SNE (this might take a minute)...")
     # Reduce 50-dim to 2-dim for plotting
@@ -35,35 +35,43 @@ def plot_clusters(features, labels, title):
     plt.colorbar(scatter)
     plt.title(title)
     plt.show()
-    
-def plot_cluster_gallery(images, predictions, cluster_id, num_samples=10):
-    """
-    Shows a row of images that the model assigned to a specific cluster.
-    """
-    # Find the indices of images belonging to the chosen cluster
-    idxs = np.where(predictions == cluster_id)[0]
-    
-    if len(idxs) == 0:
-        print(f"No images found in Cluster {cluster_id}")
-        return
 
-    # Pick a random subset if there are too many
-    if len(idxs) > num_samples:
-        idxs = np.random.choice(idxs, num_samples, replace=False)
+
+def plot_cluster_gallery(images, q_probabilities, cluster_id, num_samples=10):
+    """
+    Shows the top-N images the model is MOST confident about for a specific cluster.
+    """
+    # 1. Get the confidence scores for the specific cluster column
+    # q_probabilities shape is (N, 10)
+    cluster_scores = q_probabilities[:, cluster_id]
+
+    # 2. Get indices of the highest scores (sorted descending)
+    # argsort goes small to large, so we take the last 'num_samples' and reverse them
+    idxs = np.argsort(cluster_scores)[-num_samples:][::-1]
+    
+    # Check if we actually have images (should always be true if data exists)
+    if len(idxs) == 0:
+        print(f"No images found for Cluster {cluster_id}")
+        return
 
     plt.figure(figsize=(15, 3))
     for i, idx in enumerate(idxs):
-        # Get the image and convert from (C, H, W) to (H, W, C) for plotting
+        # Get the image and convert from (C, H, W) to (H, W, C)
         img = images[idx].permute(1, 2, 0).numpy()
         
-        # Denormalize for display (mapping back to 0-1 range)
+        # Denormalize for display
         img = (img - img.min()) / (img.max() - img.min())
         
-        plt.subplot(1, len(idxs), i + 1)
+        # Get the confidence percentage for the title
+        confidence = cluster_scores[idx] * 100
+        
+        plt.subplot(1, num_samples, i + 1)
         plt.imshow(img)
+        plt.title(f"{confidence:.1f}%", fontsize=10) # Show how sure the model is
         plt.axis('off')
         if i == 0:
             plt.ylabel(f"Cluster {cluster_id}", fontsize=12, fontweight='bold')
     
+    plt.suptitle(f"Top {num_samples} Most Confident Images for Cluster {cluster_id}", fontsize=14, y=1.05)
     plt.tight_layout()
     plt.show()
