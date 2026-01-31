@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+import torch.nn.functional as F
 from torchvision.models import ResNet50_Weights
 import os
 
@@ -16,7 +17,9 @@ class FeatureExtractor(nn.Module):
     def forward(self, x):
         with torch.no_grad():
             features = self.feature_layer(x)
-        return features.view(features.size(0), -1)
+            features = features.view(features.size(0), -1)
+            features = F.normalize(features, p=2, dim=1)
+        return features
 
     def get_or_create_embeddings(self, dataloader, save_path):
         """

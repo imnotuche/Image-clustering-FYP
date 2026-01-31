@@ -14,10 +14,7 @@ def get_reduced_features(raw_features, save_path, n_dims=50, pca_model_path="./m
 
     # 2. If not, we do the math
     print("--- Reducing dimensions via PCA... ---")
-    features = raw_features.numpy()
-    
-    # Scale first (Crucial for SVD/PCA)
-    features_scaled = StandardScaler().fit_transform(features)
+    features_scaled = raw_features.cpu().numpy()
     
     # Run Randomized SVD (via PCA)
     pca = PCA(n_components=n_dims, random_state=42)
@@ -28,6 +25,6 @@ def get_reduced_features(raw_features, save_path, n_dims=50, pca_model_path="./m
     print(f"PCA model saved to {pca_model_path}")
     
     # 3. Save it so we never do this again
-    torch.save(features, save_path)
+    torch.save(reduced, save_path)
     print(f"--- Saved reduced features to {save_path} ---")
-    return features
+    return reduced

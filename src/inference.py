@@ -1,13 +1,16 @@
 import torch
-import joblib
+import torch.nn.functional as F
 import numpy as np
 from dec_model import DEC
+import joblib
 
 def run_inference(dataloader, feature_extractor, device, model_path, pca_model_path, limit=None):
     # 1. Load the model expecting 2048 (matches your saved weights)
-    dec_model = DEC(n_clusters=10, embedding_dim=2048).to(device)
+    dec_model = DEC(n_clusters=10, embedding_dim=50).to(device)
     dec_model.load_state_dict(torch.load(model_path, map_location=device))
     dec_model.eval()
+    
+    pca=joblib.load(pca_model_path)
     
     feature_extractor.to(device)
     feature_extractor.eval()
@@ -26,12 +29,14 @@ def run_inference(dataloader, feature_extractor, device, model_path, pca_model_p
             
             # Step A: ResNet (Outputs 2048-dim)
             raw_feats = feature_extractor(images)
+            raw_feats= F.normalize(raw_feats, p=2, dim=1)
             
-            # Step B: SKIP PCA 
-            # We don't use 'pca.transform' because the DEC model wants the full 2048
+            # Step B: PCA 
+            reduced_feats=pca.transform(raw_feats)
+            reduced_feats=torch.from_numpy(reduced_feats).float().to(device)
             
             # Step C: DEC Prediction
-            q = dec_model(raw_feats) # Use raw_feats directly
+            q = dec_model(reduced_feats)
             preds = torch.argmax(q, dim=1)
             
             all_preds.append(preds.cpu().numpy())

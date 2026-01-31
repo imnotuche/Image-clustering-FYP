@@ -20,6 +20,7 @@ predictions, raw_images = run_inference(
     device, 
     model_path="./models/dec_model_final.pth", 
     pca_model_path="./models/pca_model.pkl",
+    limit=1000
 )
 
 # 3. Prove it worked!
