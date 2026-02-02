@@ -2,7 +2,6 @@ import os
 import torch
 import numpy as np
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
 import joblib
 
 def get_reduced_features(raw_features, save_path, n_dims=50, pca_model_path="./models/pca_model.pkl"):

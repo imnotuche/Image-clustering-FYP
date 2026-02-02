@@ -1,15 +1,22 @@
 import torch
 import numpy as np
-from data_loader import get_dataloader
+from data_manager import DataManager
 from train import train_dec
 from utils import evaluate_clustering
+from torchvision import datasets
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Starting experiment on: {device}")
     
-    # 1. Load the Data
-    train_loader = get_dataloader(batch_size=128)
+    manager=DataManager(batch_size=128, device=device)
+    
+    train_loader=manager.get_loader(
+        source=datasets.CIFAR10,
+        path="./data/cifar10",
+        train=True,
+        shuffle=False
+    )
     
     # 2. Train the Model
     # Note: Ensure train_dec returns the model AND the processed features/labels
