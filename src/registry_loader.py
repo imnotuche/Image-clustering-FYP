@@ -14,8 +14,12 @@ class Registry:
             return tomllib.load(f)
 
     def register(self, name, data):
-        self.data[name] = data
+        if name in self.data and isinstance(self.data[name], dict) and isinstance(data, dict):
+            self.data[name].update(data)
+        else:
+            self.data[name] = data 
         self._save()
+
 
     def get(self, *keys):   
         ref = self.data

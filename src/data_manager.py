@@ -32,9 +32,13 @@ class DataManager:
             )
         ])
         
+        self._load_registry()
+        
+    def _load_registry(self):
+        
         #create config and registry object
         self.config=Config()
-        registry_path=f"{path}/{self.name}.toml"
+        registry_path=f"{self.path}/{self.name}.toml"
         self.registry=Registry(path=registry_path)
         
         #load empty dicts in the registry file if it dosent exist
@@ -43,9 +47,6 @@ class DataManager:
             models={}
             self.registry.register("embeddings", embeddings)
             self.registry.register("models", models)
-
-    #def _load_registry():
-        
 
     def get_loader(self, source, train=True, shuffle=True):
         
@@ -69,7 +70,7 @@ class DataManager:
         
         return DataLoader(dataset, batch_size=self.batch_size, shuffle=shuffle, num_workers=2)  
     
-    def store_embedding(self, embeddings, name=f"embeddings-{datetime.now(timezone.utc).strftime("%d-%m-%Y")}"):
+    def store_embedding(self, embeddings, name=f"embeddings-{datetime.now(timezone.utc).strftime("%d-%m-%Y_%H-%M-%S")}"):
         #path reserved just for embeddings
         embeddings_root=self.config.get("paths", "embeddings_dir")
         
@@ -114,3 +115,7 @@ class UnlabeledImageDataset(Dataset):
             image = self.transform(image)
         # Return 0 as a placeholder for the label to maintain (image, label) format
         return image, 0
+    
+test=DataManager("./data/cifar10")
+test.store_embedding({"test":"someshi"})
+test.store_embedding({"teswwt":"somewweeshi"})

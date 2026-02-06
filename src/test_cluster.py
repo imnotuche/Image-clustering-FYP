@@ -11,11 +11,10 @@ def test_cluster():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load the test set
-    manager=DataManager(batch_size=128, device=device)
+    manager=DataManager(path="./data/cifar10", batch_size=128, device=device)
 
     test_loader=manager.get_loader(
         source=datasets.CIFAR10,
-        path="./data/cifar10",
         train=False,
         shuffle=True
     )

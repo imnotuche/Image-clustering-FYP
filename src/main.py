@@ -9,11 +9,10 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Starting experiment on: {device}")
     
-    manager=DataManager(batch_size=128, device=device)
+    manager=DataManager(path="./data/cifar10", batch_size=128, device=device)
     
     train_loader=manager.get_loader(
         source=datasets.CIFAR10,
-        path="./data/cifar10",
         train=True,
         shuffle=False
     )

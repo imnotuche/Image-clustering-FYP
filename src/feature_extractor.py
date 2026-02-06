@@ -48,7 +48,9 @@ class FeatureExtractor(nn.Module):
         labels_cat = torch.cat(labels_all)
         
         # Save the dictionary locally for next time
-        torch.save({'features': features_cat, 'labels': labels_cat}, save_path)
+        embeddings={'features': features_cat, 'labels': labels_cat}
+        torch.save(embeddings, save_path)
         print(f"--- Extraction complete and saved to {save_path} ---")
         
         return features_cat, labels_cat
+    
