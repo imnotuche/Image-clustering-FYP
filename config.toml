@@ -1,0 +1,4 @@
+[paths]
+embeddings_dir = "embeddings"
+models_dir = "models"
+data_dir = "data"
