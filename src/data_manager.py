@@ -70,7 +70,7 @@ class DataManager:
         
         return DataLoader(dataset, batch_size=self.batch_size, shuffle=shuffle, num_workers=2)  
     
-    def store_embedding(self, embeddings, name=f"embeddings-{datetime.now(timezone.utc).strftime("%d-%m-%Y_%H-%M-%S")}"):
+    def store_embedding(self, embeddings, name=f"embedding-{datetime.now(timezone.utc).strftime("%d-%m-%Y_%H-%M-%S")}", overwrite=False):
         #path reserved just for embeddings
         embeddings_root=self.config.get("paths", "embeddings_dir")
         
@@ -80,6 +80,16 @@ class DataManager:
         #create parent directory if it dosent exist
         path_obj = Path(save_path)
         path_obj.parent.mkdir(parents=True, exist_ok=True)
+        
+        #rename if filename already exists
+        path_exists=os.path.exists(save_path)
+        while path_exists and overwrite is False:
+            count=1
+            save_path=f"./{embeddings_root}/{self.name}/{name}_{count}.pt"
+            name=f"{name}_{count}"
+            count=count+1
+            path_exists=os.path.exists(save_path)
+        
         torch.save(embeddings, save_path)
         print(f"Saved embeddings at {save_path}.")
         
@@ -89,7 +99,38 @@ class DataManager:
         }
         self.registry.register("embeddings", data)
         print(f"{self.name} registry updated.")
-
+        
+        
+    def store_model(self, model, name=f"model-{datetime.now(timezone.utc).strftime("%d-%m-%Y_%H-%M-%S")}", overwrite=False):
+        #path reserved just for models
+        models_root=self.config.get("paths", "models_dir")
+        
+        #save path of the model file
+        save_path=f"./{models_root}/{self.name}/{name}.pth"
+        
+        #create parent directory if it dosent exist
+        path_obj = Path(save_path)
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        
+        #rename if filename already exists
+        path_exists=os.path.exists(save_path)
+        while path_exists and overwrite is False:
+            count=1
+            save_path=f"./{models_root}/{self.name}/{name}_{count}.pth"
+            name=f"{name}_{count}"
+            count=count+1
+            path_exists=os.path.exists(save_path)
+        
+        torch.save(model, save_path)
+        print(f"Saved model at {save_path}.")
+        
+        #update registry
+        data={
+            f"{name}": save_path
+        }
+        self.registry.register("models", data)
+        print(f"{self.name} registry updated.")
+        
 class UnlabeledImageDataset(Dataset):
     
     def __init__(self, root_dir, transform=None):
@@ -117,5 +158,5 @@ class UnlabeledImageDataset(Dataset):
         return image, 0
     
 test=DataManager("./data/cifar10")
-test.store_embedding({"test":"someshi"})
-test.store_embedding({"teswwt":"somewweeshi"})
+test.store_model({"test":"someshi"})
+test.store_model({"teswwt":"somewweeshi"}, overwrite=True)
