@@ -19,7 +19,21 @@ class Registry:
         else:
             self.data[name] = data 
         self._save()
+        
+    def unregister(self, *keys):
+        if not keys:
+            return
 
+        # Navigate to the parent dictionary of the target key
+        ref = self.data
+        for key in keys[:-1]:
+            ref = ref[key]
+        
+        # Remove the specific key
+        target_key = keys[-1]
+        if target_key in ref:
+            del ref[target_key]
+            self._save()
 
     def get(self, *keys):   
         ref = self.data

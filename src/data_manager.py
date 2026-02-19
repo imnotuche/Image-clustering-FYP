@@ -13,6 +13,7 @@ class DataManager:
     
     def __init__(self, path, batch_size=64, device="cpu"):
         
+        #check if provided path exixts
         if not os.path.isdir(path):
             raise NotADirectoryError(f"Invalid directory: {path}")
         
@@ -32,12 +33,30 @@ class DataManager:
             )
         ])
         
+        self._verify_root_directories()
         self._load_registry()
         
-    def _load_registry(self):
+    def _verify_root_directories(self):
+        """
+        this makes sure all the directories needed by the class exist
+        """
         
-        #create config and registry object
-        self.config=Config()
+        self.config=Config() #config loader object
+        self.config.get("paths") #get all paths
+        root_directories=list(self.config.get("paths").values())
+        
+        for path in root_directories:
+            if not os.path.exists(path):
+                os.mkdir(f"./{path}")
+                print(f"Created missing directory: {path}")
+
+    def _load_registry(self):
+        """
+        this loads and initialises the registry config file for
+        storing metadata
+        """
+        
+        #create object
         registry_path=f"{self.path}/{self.name}.toml"
         self.registry=Registry(path=registry_path)
         
@@ -47,6 +66,85 @@ class DataManager:
             models={}
             self.registry.register("embeddings", embeddings)
             self.registry.register("models", models)
+
+    def update_registry(self):
+        
+        """
+        This updates registry to match what actually exists
+        run this in a separate script to update registry if you delete a file
+        or manually add one
+        """
+        
+        #retrieve embeddings root path and paths of embeddings from registry
+        embeddings_root=f"{self.config.get("paths" ,"embeddings_dir")}/{self.name}"
+        embeddings_registry=list(self.registry.get("embeddings").values())
+        
+        #get the files present in the embeddings folder
+        embeddings_files=os.listdir(embeddings_root)
+        
+        #register new files
+        print(f"Checking for unregistered embedding files for {self.name}")
+        for file in embeddings_files:
+            
+            #assemble fullpath to compare with paths in registry
+            full_path=f"./{embeddings_root}/{file}"
+            #split the extension from the filename
+            name, _=os.path.splitext(file)
+            
+            #save to registry if no record exists
+            if full_path not in embeddings_registry:
+                data={
+                    name: full_path
+                }
+                self.registry.register("embeddings", data)
+                print(f"Added {file} to registry")
+        
+        #Remove records of deleted files
+        print(f"Checking for Records of deleted embedding files for {self.name}")
+        for path in embeddings_registry:
+            
+            p=Path(path)
+            if p.name not in embeddings_files:
+                #split the extension from the filename
+                name=p.stem
+                self.registry.unregister("embeddings", name)
+                print(f"Removed {p.name} record from registry")
+        
+        #retrieve models root path and paths of models from registry
+        models_root=f"{self.config.get("paths" ,"models_dir")}/{self.name}"
+        models_registry=list(self.registry.get("models").values())
+        
+        #get the files present in the embeddings folder
+        models_files=os.listdir(models_root)
+        
+        #register new files
+        print(f"Checking for unregistered models for {self.name}")
+        for file in models_files:
+            
+            #assemble fullpath to compare with paths in registry
+            full_path=f"./{models_root}/{file}"
+            #split the extension from the filename
+            name, _=os.path.splitext(file)
+            
+            #save to registry if no record exists
+            if full_path not in models_registry:
+                data={
+                    name: full_path
+                }
+                self.registry.register("models", data)
+                print(f"Added {file} to registry")
+                
+        #Remove records of deleted files
+        print(f"Checking for Records of deleted model files for {self.name}")
+        for path in models_registry:
+            
+            p=Path(path)
+            if p.name not in models_files:
+                #split the extension from the filename
+                name=p.stem
+                self.registry.unregister("models", name)
+                print(f"Removed {p.name} record from registry")
+        
 
     def get_loader(self, source, train=True, shuffle=True):
         
@@ -158,5 +256,7 @@ class UnlabeledImageDataset(Dataset):
         return image, 0
     
 test=DataManager("./data/cifar10")
-test.store_model({"test":"someshi"})
-test.store_model({"teswwt":"somewweeshi"}, overwrite=True)
+#test.store_embedding({"test":"someshi"})
+
+test.update_registry()
+#test.store_model({"teswwt":"somewweeshi"}, overwrite=True)
