@@ -6,6 +6,7 @@ from sklearn.cluster import KMeans
 from dec_model import DEC
 from feature_extractor import FeatureExtractor
 from dimension_reduction import get_reduced_features
+from data_manager import DataManager
 
 def target_distribution(q):
     weight = q**2 / q.sum(0)
@@ -13,17 +14,16 @@ def target_distribution(q):
 
 def train_dec(dataloader, n_clusters=10, embedding_dim=50, epochs=50):
     
-    #raw embeddings and dimensionally reduced embeddings path
-    raw_embeddings_path="./embeddings/cifar10_embeddings.pt"
-    reduced_embeddings_path="./embeddings/cifar10_reduced.pt"
-    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = DEC(n_clusters=n_clusters, embedding_dim=embedding_dim).to(device)
     
+    cifar10_manager=DataManager(path="./data/cifar10", batch_size=128, device=device)
+    
     #extract embeddings and reduce dimensions
-    extractor=FeatureExtractor()
-    raw_features, labels = extractor.get_or_create_embeddings(dataloader=dataloader, save_path=raw_embeddings_path)
-    reduced_features=get_reduced_features(raw_features=raw_features, save_path=reduced_embeddings_path, n_dims=embedding_dim)
+    #extractor=FeatureExtractor()
+    #raw_features, labels = extractor.get_or_create_embeddings(dataloader=dataloader, save_path=raw_embeddings_path)
+    raw_features, labels = cifar10_manager.load__embedding("cifar10_embeddings")
+    reduced_features=get_reduced_features(raw_features=raw_features, n_dims=embedding_dim)
     
     # Ensure reduced_features is a tensor
     if isinstance(reduced_features, np.ndarray):

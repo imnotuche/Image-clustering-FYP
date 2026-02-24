@@ -1,17 +1,8 @@
-import os
-import torch
-import numpy as np
 from sklearn.decomposition import PCA
 import joblib
 
-def get_reduced_features(raw_features, save_path, n_dims=50, pca_model_path="./models/pca_model.pkl"):
-    
-    #check if reduced dimensions for the dataset already exists
-    if os.path.exists(save_path):
-        print(f"--- Loading reduced features from {save_path} ---")
-        return torch.load(save_path, weights_only=False)
+def get_reduced_features(raw_features, n_dims=50, pca_model_path="./models/pca_model.pkl"):
 
-    # 2. If not, we do the math
     print("--- Reducing dimensions via PCA... ---")
     features_scaled = raw_features.cpu().numpy()
     
@@ -23,7 +14,4 @@ def get_reduced_features(raw_features, save_path, n_dims=50, pca_model_path="./m
     joblib.dump(pca, pca_model_path) 
     print(f"PCA model saved to {pca_model_path}")
     
-    # 3. Save it so we never do this again
-    torch.save(reduced, save_path)
-    print(f"--- Saved reduced features to {save_path} ---")
     return reduced

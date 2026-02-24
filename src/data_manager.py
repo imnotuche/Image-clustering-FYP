@@ -3,6 +3,8 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from PIL import Image
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 import torch
 from torch.utils.data import Dataset
 from datetime import datetime, timezone
@@ -198,6 +200,10 @@ class DataManager:
         self.registry.register("embeddings", data)
         print(f"{self.name} registry updated.")
         
+    def load__embedding(self, name):
+        path=self.registry.get("embeddings", name)
+        data = torch.load(path, weights_only=False)
+        return data["features"], data["labels"]
         
     def store_model(self, model, name=f"model-{datetime.now(timezone.utc).strftime("%d-%m-%Y_%H-%M-%S")}", overwrite=False):
         #path reserved just for models
@@ -229,6 +235,9 @@ class DataManager:
         self.registry.register("models", data)
         print(f"{self.name} registry updated.")
         
+    def load__model(self, name, device):
+        path = self.registry.get("models", name)
+        return torch.load(path, map_location=device)
 class UnlabeledImageDataset(Dataset):
     
     def __init__(self, root_dir, transform=None):
@@ -255,8 +264,8 @@ class UnlabeledImageDataset(Dataset):
         # Return 0 as a placeholder for the label to maintain (image, label) format
         return image, 0
     
-test=DataManager("./data/cifar10")
+#test=DataManager("./data/cifar10")
 #test.store_embedding({"test":"someshi"})
-
-test.update_registry()
+#test.update_registry()
 #test.store_model({"teswwt":"somewweeshi"}, overwrite=True)
+

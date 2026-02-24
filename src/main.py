@@ -4,29 +4,29 @@ from data_manager import DataManager
 from train import train_dec
 from utils import evaluate_clustering
 from torchvision import datasets
+from dimension_reduction import get_reduced_features
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Starting experiment on: {device}")
     
-    manager=DataManager(path="./data/cifar10", batch_size=128, device=device)
+    cifar10_manager=DataManager(path="./data/cifar10", batch_size=128, device=device)
     
-    train_loader=manager.get_loader(
+    train_loader=cifar10_manager.get_loader(
         source=datasets.CIFAR10,
         train=True,
         shuffle=False
     )
+    
+    cifar10_embeddings, labels=cifar10_manager.load__embedding("cifar10_embeddings")
     
     # 2. Train the Model
     # Note: Ensure train_dec returns the model AND the processed features/labels
     print("Training DEC model...")
     trained_model = train_dec(train_loader, n_clusters=10, embedding_dim=50, epochs=10)
     
-    # 3. Load the Reduced Features for Evaluation
-    # Since train_dec saved them to disk, let's grab them
     print("Loading reduced features for evaluation...")
-    # Using weights_only=False because of the NumPy data inside the .pt file
-    data = torch.load("./embeddings/cifar10_reduced.pt", weights_only=False)
+    data = get_reduced_features(cifar10_embeddings, n_dims=50)
     
     # If you saved it as a dict, unpack it. If just a tensor, use it directly.
     if isinstance(data, dict):
@@ -36,7 +36,7 @@ def main():
         features_cat = data
         # You'll need to get labels from your extractor or original loader
         # Let's assume you returned labels from train_dec or saved them
-        labels_cat = torch.load("./embeddings/cifar10_embeddings.pt", weights_only=False)['labels']
+        labels_cat = labels
 
     # 4. Final Evaluation
     print("Evaluating clusters...")
@@ -67,9 +67,8 @@ def main():
     print(f"ARI: {metrics['ari']:.4f}")
     
     # Save the model weights
-    model_path = "./models/dec_model_final.pth"
-    torch.save(trained_model.state_dict(), model_path)
-    print(f"Model saved to {model_path}")
+    model_name = "cifar10_model"
+    cifar10_manager.store_model(model=trained_model.state_dict(), name=model_name)
     
     # Create a results dictionary
     results = {

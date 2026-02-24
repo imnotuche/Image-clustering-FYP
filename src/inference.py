@@ -4,10 +4,10 @@ import numpy as np
 from dec_model import DEC
 import joblib
 
-def run_inference(dataloader, feature_extractor, device, model_path, pca_model_path, limit=None):
+def run_inference(dataloader, feature_extractor, device, model, pca_model_path, limit=None):
     # 1. Load the model expecting 2048 (matches your saved weights)
     dec_model = DEC(n_clusters=10, embedding_dim=50).to(device)
-    dec_model.load_state_dict(torch.load(model_path, map_location=device))
+    dec_model.load_state_dict(model)
     dec_model.eval()
     
     pca=joblib.load(pca_model_path)

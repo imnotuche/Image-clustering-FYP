@@ -11,13 +11,15 @@ def test_cluster():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load the test set
-    manager=DataManager(path="./data/cifar10", batch_size=128, device=device)
+    cifar10_manager=DataManager(path="./data/cifar10", batch_size=128, device=device)
 
-    test_loader=manager.get_loader(
+    test_loader=cifar10_manager.get_loader(
         source=datasets.CIFAR10,
         train=False,
         shuffle=True
     )
+    
+    model=cifar10_manager.load__model("cifar10_model", device=device)
 
     # Initialize Feature Extractor
     feature_extractor = FeatureExtractor()
@@ -27,7 +29,7 @@ def test_cluster():
         test_loader, 
         feature_extractor, 
         device, 
-        model_path="./models/dec_model_final.pth", 
+        model=model, 
         pca_model_path="./models/pca_model.pkl",
         limit=1000
     )
