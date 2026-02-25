@@ -183,8 +183,8 @@ class DataManager:
         
         #rename if filename already exists
         path_exists=os.path.exists(save_path)
+        count=1
         while path_exists and overwrite is False:
-            count=1
             save_path=f"./{embeddings_root}/{self.name}/{name}_{count}.pt"
             name=f"{name}_{count}"
             count=count+1
@@ -218,8 +218,8 @@ class DataManager:
         
         #rename if filename already exists
         path_exists=os.path.exists(save_path)
+        count=1
         while path_exists and overwrite is False:
-            count=1
             save_path=f"./{models_root}/{self.name}/{name}_{count}.pth"
             name=f"{name}_{count}"
             count=count+1
