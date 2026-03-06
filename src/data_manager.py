@@ -48,9 +48,9 @@ class DataManager:
         root_directories=list(self.config.get("paths").values())
         
         for path in root_directories:
-            if not os.path.exists(path):
-                os.mkdir(f"./{path}")
-                print(f"Created missing directory: {path}")
+            if not os.path.exists(f"{path}/{self.name}"):
+                os.mkdir(f"./{path}/{self.name}")
+                print(f"Created missing directory: {path}/{self.name}")
 
     def _load_registry(self):
         """
@@ -160,13 +160,23 @@ class DataManager:
         
         else:
             # Dynamically initialize any torchvision dataset (CIFAR10, CIFAR100, STL10, etc.)
-            print(f"Loading {source.__name__} from: {self.path}...")
-            dataset = source(
-                root=self.path, 
-                train=train, 
-                download=True, 
-                transform=self.transform
-            )
+            try:
+                # CIFAR-10, CIFAR-100 use train=True/False
+                dataset = source(
+                    root=self.path,
+                    train=train,
+                    download=True,
+                    transform=self.transform
+                )
+            except TypeError:
+                # STL-10 and others use split= instead of train=
+                split = 'train' if train else 'test'
+                dataset = source(
+                    root=self.path,
+                    split=split,
+                    download=True,
+                    transform=self.transform
+                )
         
         return DataLoader(dataset, batch_size=self.batch_size, shuffle=shuffle, num_workers=2)  
     
@@ -237,7 +247,7 @@ class DataManager:
         
     def load__model(self, name, device):
         path = self.registry.get("models", name)
-        return torch.load(path, map_location=device)
+        return torch.load(path, map_location=device, weights_only=False)
 class UnlabeledImageDataset(Dataset):
     
     def __init__(self, root_dir, transform=None):
@@ -264,7 +274,7 @@ class UnlabeledImageDataset(Dataset):
         # Return 0 as a placeholder for the label to maintain (image, label) format
         return image, 0
     
-#test=DataManager("./data/cifar10")
+#test=DataManager("./data/stl10")
 #test.store_embedding({"test":"someshi"})
 #test.update_registry()
 #test.store_model({"teswwt":"somewweeshi"}, overwrite=True)
