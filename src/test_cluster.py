@@ -16,7 +16,7 @@ def test_cluster():
         train=False,
         shuffle=True
     )
-
+    
     feature_extractor = FeatureExtractor()
     model=stl10_manager.load__model("stl10_hdbscan_model", device=device)
 

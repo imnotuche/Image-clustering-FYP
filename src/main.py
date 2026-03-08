@@ -1,11 +1,9 @@
 import torch
 import numpy as np
 from data_manager import DataManager
-from feature_extractor import FeatureExtractor
 from train import train_hdbscan
 from utils import evaluate_clustering, plot_clusters
 from dimension_reduction import get_reduced_features
-from torchvision import datasets
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
