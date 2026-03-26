@@ -1,6 +1,4 @@
 data/
-__pycache__/
 embeddings/
-*.pt
-results/
 models/
+__pycache__/
