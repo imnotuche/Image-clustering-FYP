@@ -29,7 +29,7 @@ def main():
     MIN_CLUSTER_SIZE = 50
     MIN_SAMPLES      = 5
     UMAP_MODEL_PATH  = './models/stl10_inference_umap.pkl'
-    HEAD_WEIGHTS     = './models/projection_head.pth'
+    HEAD_WEIGHTS     = './models/stl10_projection_head.pth'
 
     os.makedirs('./results', exist_ok=True)
 

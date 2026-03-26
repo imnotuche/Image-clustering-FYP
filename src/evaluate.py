@@ -104,25 +104,40 @@ def plot_cluster_gallery(
         return
 
     # Sort by strength descending
-    sorted_order = np.argsort(strengths[indices])[::-1]
-    top_indices  = indices[sorted_order[:num_samples]]
+    sorted_order = np.argsort(strengths[indices])
+    
+    # Bottom N (least confident)
+    bottom_indices = indices[sorted_order[:num_samples]]
+    
+    # Top N (most confident)
+    top_indices = indices[sorted_order[-num_samples:]][::-1]
+    
+    # Combine: top row first, then bottom row
+    selected_indices = np.concatenate([top_indices, bottom_indices])
 
-    fig, axes = plt.subplots(1, len(top_indices), figsize=(15, 3))
+    fig, axes = plt.subplots(2, num_samples, figsize=(15, 6))
     if len(top_indices) == 1:
         axes = [axes]
 
-    for i, idx in enumerate(top_indices):
+    for i, idx in enumerate(selected_indices):
+        row = 0 if i < num_samples else 1
+        col = i % num_samples
+
         img = images[idx].permute(1, 2, 0).numpy()
         img = (img - img.min()) / (img.max() - img.min() + 1e-8)
-        axes[i].imshow(img)
-        axes[i].set_title(f"{strengths[idx]*100:.1f}%", fontsize=9)
-        axes[i].axis('off')
 
-    axes[0].set_ylabel(f"Cluster {cluster_id}", fontsize=11, fontweight='bold')
+        axes[row, col].imshow(img)
+        axes[row, col].set_title(f"{strengths[idx]*100:.1f}%", fontsize=9)
+        axes[row, col].axis('off')
+
+    axes[0, 0].set_ylabel("Top", fontsize=11, fontweight='bold')
+    axes[1, 0].set_ylabel("Bottom", fontsize=11, fontweight='bold')
+
     fig.suptitle(
-        f"Top {len(top_indices)} images — Cluster {cluster_id}",
+        f"Top & Bottom {num_samples} images — Cluster {cluster_id}",
         fontsize=13, y=1.02
     )
+    
     plt.tight_layout()
     plt.savefig(f"./results/cluster_{cluster_id}_gallery.png",
                 dpi=120, bbox_inches='tight')

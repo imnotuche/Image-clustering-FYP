@@ -9,18 +9,18 @@ from dimension_reduction import DimensionReducer
 
 
 def run_inference(
-    projection_head:   ProjectionHead,
+    projection_head: ProjectionHead,
     dimension_reducer: DimensionReducer,
-    min_cluster_size:  int          = 50,
-    min_samples:       int          = 5,
-    device:            str          = 'cpu',
+    min_cluster_size: int = 50,
+    min_samples: int = 5,
+    device: str = 'cpu',
     # Option A: pass pre-extracted DINO embeddings directly
-    dino_features:     torch.Tensor = None,
-    raw_images:        torch.Tensor = None,
+    dino_features: torch.Tensor = None,
+    raw_images: torch.Tensor = None,
     # Option B: pass a dataloader + extractor and extract on the fly
-    dataloader                      = None,
-    dino_extractor:    DinoFeatureExtractor = None,
-    limit:             int          = None
+    dataloader = None,
+    dino_extractor: DinoFeatureExtractor = None,
+    limit: int = None
 ) -> tuple:
     """
     Clusters a batch of images using the trained projection head.

@@ -34,7 +34,7 @@ MIN_CLUSTER_SIZE = 5
 MIN_SAMPLES      = 2
 
 UMAP_MODEL_PATH  = './models/stl10_inference_umap.pkl'
-HEAD_WEIGHTS     = './models/projection_head.pth'
+HEAD_WEIGHTS     = './models/stl10_projection_head.pth'
 
 # ─── Sanity checks ───────────────────────────────────────────────────────────
 
