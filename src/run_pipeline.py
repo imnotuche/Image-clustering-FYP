@@ -127,8 +127,7 @@ def main():
         device=DEVICE
     )
 
-    torch.save(projection_head.state_dict(), './models/stl10_projection_head.pth')
-    print("\nProjection head saved to ./models/stl10_projection_head.pth")
+    stl10_manager.store_model(model=projection_head.state_dict(), name="stl10_projection_head")
 
     # --- Refit UMAP on projection head outputs -------------------------------
     # CRITICAL: the inference UMAP must be fitted on projection head outputs
