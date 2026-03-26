@@ -20,16 +20,23 @@ from dimension_reduction import DimensionReducer
 from embedding_model import ProjectionHead
 from inference import run_inference
 from evaluate import evaluate_clustering, plot_clusters, plot_cluster_gallery
+from auto_min_cluster import auto_min_cluster_size
 
 
 def main():
 
-    DEVICE           = 'cuda' if torch.cuda.is_available() else 'cpu'
-    BATCH_SIZE       = 64
-    MIN_CLUSTER_SIZE = 50
-    MIN_SAMPLES      = 5
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    BATCH_SIZE = 64
+    MIN_SAMPLES = 5
+    
+    stl10_manager = DataManager(
+        path='./data/stl10',
+        batch_size=BATCH_SIZE,
+        device=DEVICE
+    )
+    
     UMAP_MODEL_PATH  = './models/stl10_inference_umap.pkl'
-    HEAD_WEIGHTS     = './models/stl10_projection_head.pth'
+    HEAD_WEIGHTS     = stl10_manager.load_model(name="stl10_projection_head", device=DEVICE, path=True)
 
     os.makedirs('./results', exist_ok=True)
 
@@ -62,12 +69,6 @@ def main():
 
     print("\n[2/4] Loading STL-10 test set...")
 
-    stl10_manager = DataManager(
-        path='./data/stl10',
-        batch_size=BATCH_SIZE,
-        device=DEVICE
-    )
-
     test_loader = stl10_manager.get_loader(
         source=datasets.STL10,
         train=False,
@@ -90,7 +91,8 @@ def main():
 
     print("\n[4/4] Running inference...")
 
-    INFERENCE_LIMIT = 1000   # set to None to run on full 8000 test images
+    INFERENCE_LIMIT = 1000
+    MIN_CLUSTER_SIZE = auto_min_cluster_size(n=INFERENCE_LIMIT)
 
     # Slice labels and features to match the limit upfront
     if INFERENCE_LIMIT is not None:

@@ -22,6 +22,7 @@ from dimension_reduction import DimensionReducer
 from embedding_model import ProjectionHead
 from inference import run_inference
 from evaluate import evaluate_clustering, plot_clusters
+from auto_min_cluster import auto_min_cluster_size
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -30,11 +31,16 @@ DEVICE           = 'cuda' if torch.cuda.is_available() else 'cpu'
 BATCH_SIZE       = 16
 
 # Keep these small for small batches
-MIN_CLUSTER_SIZE = 5
 MIN_SAMPLES      = 2
 
+stl10_manager = DataManager(
+    path='./data/stl10',
+    batch_size=BATCH_SIZE,
+    device=DEVICE
+)
+
 UMAP_MODEL_PATH  = './models/stl10_inference_umap.pkl'
-HEAD_WEIGHTS     = './models/stl10_projection_head.pth'
+HEAD_WEIGHTS     = stl10_manager.load_model(name="stl10_projection_head", device=DEVICE, path=True)
 
 # ─── Sanity checks ───────────────────────────────────────────────────────────
 
@@ -79,9 +85,10 @@ loader  = manager.get_loader(source='local', shuffle=False)
 n_images = len(loader.dataset)
 print(f"Found {n_images} images.")
 
-if n_images < MIN_CLUSTER_SIZE:
-    print(f"\nWarning: only {n_images} images but MIN_CLUSTER_SIZE={MIN_CLUSTER_SIZE}.")
-    print("Lower MIN_CLUSTER_SIZE further or add more images.")
+MIN_CLUSTER_SIZE = auto_min_cluster_size(n=n_images)
+
+if n_images < 100:
+    print(f"\nCannod cluster < 100 images")
 
 # ─── Run inference ────────────────────────────────────────────────────────────
 

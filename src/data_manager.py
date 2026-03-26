@@ -247,9 +247,14 @@ class DataManager:
         self.registry.register("models", data)
         print(f"{self.name} registry updated.")
         
-    def load_model(self, name, device):
+    def load_model(self, name, device, path: bool=False):
         path = self.registry.get("models", name)
+        
+        if path:
+            return path
+        
         return torch.load(path, map_location=device, weights_only=False)
+
 class UnlabeledImageDataset(Dataset):
     
     def __init__(self, root_dir, transform=None):
