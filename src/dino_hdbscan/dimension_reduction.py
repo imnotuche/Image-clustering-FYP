@@ -6,19 +6,6 @@ import umap
 
 
 class DimensionReducer:
-    """
-    Wraps UMAP for dimensionality reduction.
-
-    - fit_transform: used during training. Fits UMAP on the training embeddings
-    and saves the fitted model to disk.
-    - transform: used at inference. Loads the saved model and projects new
-    embeddings into the existing coordinate system without refitting.
-
-    Why this split matters: if you refit UMAP on new data, the coordinate
-    system changes and the cluster centroids from training become meaningless.
-    transform preserves the coordinate system so new images land in the same
-    space as the training images.
-    """
 
     def __init__(self, n_components: int = 50, n_neighbors: int = 30,
                 min_dist: float = 0.1, model_path: str = "./models/umap_model.pkl"):

@@ -2,3 +2,4 @@ data/
 embeddings/
 models/
 __pycache__/
+results/

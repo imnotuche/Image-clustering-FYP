@@ -2,7 +2,7 @@ import tomllib
 from pathlib import Path
 
 class Config:
-    def __init__(self, path="config.toml"):
+    def __init__(self, path : str ="config.toml"):
             
         self.path = Path(path)
         self.data = self._load()
@@ -14,7 +14,7 @@ class Config:
         with open(self.path, "rb") as f:
             return tomllib.load(f)
 
-    def get(self, *keys):
+    def get(self, *keys : str):
         
         ref = self.data
         for key in keys:

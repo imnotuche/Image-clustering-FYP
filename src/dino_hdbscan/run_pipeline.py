@@ -26,16 +26,15 @@ from train import mine_neighbours, train_projection_head
 from evaluate import evaluate_clustering
 import joblib
 
-
 def main():
 
     # --- Config --------------------------------------------------------------
 
     DEVICE           = 'cuda' if torch.cuda.is_available() else 'cpu'
     BATCH_SIZE       = 64
-    MIN_CLUSTER_SIZE = 50
     MIN_SAMPLES      = 5
     UMAP_DIMS        = 50
+    MIN_CLUSTER_SIZE = 50
     UMAP_NEIGHBOURS  = 30
     KNN_K            = 10
     EPOCHS           = 50
@@ -63,6 +62,8 @@ def main():
         train=True,
         shuffle=False   # keep order consistent with label indexing
     )
+    
+    num_images = len(train_loader.dataset)
 
     # --- Step 2: DINO feature extraction -------------------------------------
 

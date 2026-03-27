@@ -35,8 +35,8 @@ def main():
         device=DEVICE
     )
     
-    UMAP_MODEL_PATH  = './models/stl10_inference_umap.pkl'
-    HEAD_WEIGHTS     = stl10_manager.load_model(name="stl10_projection_head", device=DEVICE, path=True)
+    UMAP_MODEL_PATH = './models/stl10_inference_umap.pkl'
+    HEAD_WEIGHTS = stl10_manager.load_model(name="stl10_projection_head", device=DEVICE, path=True)
 
     os.makedirs('./results', exist_ok=True)
 
