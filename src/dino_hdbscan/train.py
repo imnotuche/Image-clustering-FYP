@@ -4,8 +4,8 @@ from torch.utils.data import DataLoader
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
-from embedding_model import ProjectionHead
-from pseudo_dataset import EmbeddingDataset
+from dino_hdbscan.embedding_model import ProjectionHead
+from dino_hdbscan.pseudo_dataset import EmbeddingDataset
 
 
 def mine_neighbours(embeddings: np.ndarray, k: int = 10) -> np.ndarray:

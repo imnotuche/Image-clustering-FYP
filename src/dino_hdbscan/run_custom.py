@@ -16,13 +16,13 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from data_manager import DataManager
-from feature_extractor import DinoFeatureExtractor
-from dimension_reduction import DimensionReducer
-from embedding_model import ProjectionHead
-from inference import run_inference
-from evaluate import evaluate_clustering, plot_clusters
-from auto_min_cluster import auto_min_cluster_size
+from dino_hdbscan.data_manager import DataManager
+from dino_hdbscan.feature_extractor import DinoFeatureExtractor
+from dino_hdbscan.dimension_reduction import DimensionReducer
+from dino_hdbscan.embedding_model import ProjectionHead
+from dino_hdbscan.inference import run_inference
+from dino_hdbscan.evaluate import evaluate_clustering, plot_clusters
+from dino_hdbscan.auto_min_cluster import auto_min_cluster_size
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 

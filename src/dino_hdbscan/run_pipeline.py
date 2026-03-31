@@ -18,12 +18,12 @@ import torch
 import numpy as np
 from torchvision import datasets
 
-from data_manager import DataManager
-from feature_extractor import DinoFeatureExtractor
-from dimension_reduction import DimensionReducer
-from pseudo_label_generator import PseudoLabelGenerator
-from train import mine_neighbours, train_projection_head
-from evaluate import evaluate_clustering
+from dino_hdbscan.data_manager import DataManager
+from dino_hdbscan.feature_extractor import DinoFeatureExtractor
+from dino_hdbscan.dimension_reduction import DimensionReducer
+from dino_hdbscan.pseudo_label_generator import PseudoLabelGenerator
+from dino_hdbscan.train import mine_neighbours, train_projection_head
+from dino_hdbscan.evaluate import evaluate_clustering
 import joblib
 
 def main():

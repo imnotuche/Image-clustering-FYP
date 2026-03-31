@@ -3,9 +3,9 @@ import numpy as np
 from sklearn.cluster import HDBSCAN
 from sklearn.metrics.pairwise import euclidean_distances
 
-from feature_extractor import DinoFeatureExtractor
-from embedding_model import ProjectionHead
-from dimension_reduction import DimensionReducer
+from dino_hdbscan.feature_extractor import DinoFeatureExtractor
+from dino_hdbscan.embedding_model import ProjectionHead
+from dino_hdbscan.dimension_reduction import DimensionReducer
 
 
 def run_inference(

@@ -8,8 +8,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 import torch
 from torch.utils.data import Dataset
 from datetime import datetime, timezone
-from registry_loader import Registry
-from config_loader import Config
+from dino_hdbscan.registry_loader import Registry
+from dino_hdbscan.config_loader import Config
 
 class DataManager:
     
@@ -247,7 +247,7 @@ class DataManager:
         self.registry.register("models", data)
         print(f"{self.name} registry updated.")
         
-    def load_model(self, name, device, path: bool=False):
+    def load_model(self, name, device=None, path: bool=False):
         path = self.registry.get("models", name)
         
         if path:

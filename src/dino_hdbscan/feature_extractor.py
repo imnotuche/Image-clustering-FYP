@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from data_manager import DataManager
+from dino_hdbscan.data_manager import DataManager
 
 
 class DinoFeatureExtractor:
