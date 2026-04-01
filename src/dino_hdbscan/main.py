@@ -25,7 +25,7 @@ def main():
 
     app = QApplication(sys.argv)
     app.setApplicationName("DINO Image Clustering")
-    app.setOrganizationName("Adeleke University FYP")
+    app.setOrganizationName("FYP")
 
     window = MainWindow()
     window.show()
