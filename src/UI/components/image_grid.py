@@ -41,6 +41,7 @@ def tensor_to_pixmap(tensor: torch.Tensor) -> QPixmap:
     img = (img - img.min()) / (img.max() - img.min() + 1e-8)  # 0-1
     img = (img * 255).clip(0, 255).astype(np.uint8)            # 0-255 uint8
 
+    img = np.ascontiguousarray(img) 
     h, w, c = img.shape
     qimg = QImage(img.data, w, h, w * c, QImage.Format.Format_RGB888)
     pixmap = QPixmap.fromImage(qimg)
