@@ -281,7 +281,7 @@ class UnlabeledImageDataset(Dataset):
         # Return 0 as a placeholder for the label to maintain (image, label) format
         return image, 0
     
-#test=DataManager("./data/stl10")
+#test=DataManager("./data/cifar10")
 #test.store_embedding({"test":"someshi"})
 #test.update_registry()
 #test.store_model({"teswwt":"somewweeshi"}, overwrite=True)

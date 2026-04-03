@@ -1,50 +1,38 @@
 """
-ui/components/image_grid.py
+UI/components/image_grid.py
 
-Scrollable image gallery. Displays one cluster at a time as a grid of
-thumbnails with confidence badges.
+Scrollable image grid inside a rounded card.
+Shows placeholder text before any cluster is selected.
 
-Key design decisions for performance on i3/8GB:
-    - Thumbnails are generated once and cached as QPixmap (small, fast to paint)
-    - Only the currently visible cluster is rendered — switching clusters clears
-      and rebuilds the grid (cheap, no pixmap recalculation)
-    - Thumbnails are 160x160px. At that size you can fit ~4-5 columns and
-      display hundreds of images without meaningful memory pressure.
-    - Raw tensor -> QPixmap conversion happens on demand, not upfront for all images.
-
-Usage:
-    grid = ImageGrid()
-    grid.display_cluster(result.images_for_cluster(0))
+Performance notes (i3 / 8GB):
+    - Thumbnails generated once per display_cluster() call
+    - np.ascontiguousarray() ensures QImage buffer compatibility
+    - Only the active cluster is rendered at any time
 """
 
 import numpy as np
 from PySide6.QtWidgets import (
-    QWidget, QScrollArea, QGridLayout, QLabel, QVBoxLayout,
-    QSizePolicy, QFrame,
+    QWidget, QScrollArea, QGridLayout, QLabel,
+    QVBoxLayout, QHBoxLayout, QFrame, QSizePolicy,
 )
-from PySide6.QtCore import Qt, QSize, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap, QImage
 import torch
 
 
-THUMB_SIZE = 160   # px, square
+THUMB_SIZE = 160
 
 
 def tensor_to_pixmap(tensor: torch.Tensor) -> QPixmap:
-    """
-    Convert a (C, H, W) normalized image tensor to a QPixmap thumbnail.
+    """(C,H,W) normalised tensor → scaled QPixmap thumbnail."""
+    img = tensor.permute(1, 2, 0).numpy()
+    img = (img - img.min()) / (img.max() - img.min() + 1e-8)
+    img = (img * 255).clip(0, 255).astype(np.uint8)
+    img = np.ascontiguousarray(img)   # QImage requires C-contiguous buffer
 
-    Handles the ImageNet denormalization that happens to all images
-    passed through DataManager's transform pipeline.
-    """
-    img = tensor.permute(1, 2, 0).numpy()          # (H, W, C) float32
-    img = (img - img.min()) / (img.max() - img.min() + 1e-8)  # 0-1
-    img = (img * 255).clip(0, 255).astype(np.uint8)            # 0-255 uint8
-
-    img = np.ascontiguousarray(img) 
     h, w, c = img.shape
-    qimg = QImage(img.data, w, h, w * c, QImage.Format.Format_RGB888)
-    pixmap = QPixmap.fromImage(qimg)
+    qimg    = QImage(img.data, w, h, w * c, QImage.Format.Format_RGB888)
+    pixmap  = QPixmap.fromImage(qimg)
     return pixmap.scaled(
         THUMB_SIZE, THUMB_SIZE,
         Qt.AspectRatioMode.KeepAspectRatio,
@@ -53,10 +41,7 @@ def tensor_to_pixmap(tensor: torch.Tensor) -> QPixmap:
 
 
 class ThumbnailCard(QFrame):
-    """
-    Single image card: thumbnail + confidence badge.
-    Emits clicked signal with the image item dict.
-    """
+    """Thumbnail + confidence badge. Emits clicked(dict)."""
 
     clicked = Signal(dict)
 
@@ -64,25 +49,19 @@ class ThumbnailCard(QFrame):
         super().__init__(parent)
         self.item = item
         self.setObjectName("thumbnailCard")
-        self.setFixedSize(THUMB_SIZE + 8, THUMB_SIZE + 28)
+        self.setFixedSize(THUMB_SIZE + 12, THUMB_SIZE + 32)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._build(item)
 
-    def _build(self, item: dict):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(2)
+        layout.setContentsMargins(6, 6, 6, 5)
+        layout.setSpacing(4)
 
-        # Thumbnail
-        pixmap = tensor_to_pixmap(item["tensor"])
-        img_label = QLabel()
-        img_label.setPixmap(pixmap)
-        img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(img_label)
+        img_lbl = QLabel()
+        img_lbl.setPixmap(tensor_to_pixmap(item["tensor"]))
+        img_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(img_lbl)
 
-        # Confidence badge
-        pct = item["strength"] * 100
-        badge = QLabel(f"{pct:.1f}%")
+        badge = QLabel(f"{item['strength'] * 100:.1f}%")
         badge.setObjectName("confidenceBadge")
         badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(badge)
@@ -94,104 +73,103 @@ class ThumbnailCard(QFrame):
 
 class ImageGrid(QWidget):
     """
-    Scrollable grid of ThumbnailCards.
+    Scrollable grid of ThumbnailCards inside a rounded card.
 
     Signals:
-        image_clicked(dict)   -- emitted when a thumbnail is clicked
+        image_clicked(dict)
     """
 
     image_clicked = Signal(dict)
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setObjectName("imageGrid")
+        self.setObjectName("gridCard")
         self._build_ui()
-        self._current_cluster = None
 
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # Cluster title bar
+        # Header bar
+        header_bar = QWidget()
+        header_bar.setFixedHeight(48)
+        header_layout = QHBoxLayout(header_bar)
+        header_layout.setContentsMargins(20, 0, 20, 0)
+
         self.cluster_label = QLabel("")
-        self.cluster_label.setObjectName("clusterTitle")
-        self.cluster_label.setContentsMargins(16, 12, 16, 8)
-        root.addWidget(self.cluster_label)
+        self.cluster_label.setObjectName("gridHeader")
+        header_layout.addWidget(self.cluster_label)
+        header_layout.addStretch()
+
+        root.addWidget(header_bar)
 
         # Scroll area
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self._grid_container = QWidget()
         self._grid_container.setObjectName("gridContainer")
         self._grid = QGridLayout(self._grid_container)
-        self._grid.setSpacing(8)
-        self._grid.setContentsMargins(16, 8, 16, 16)
+        self._grid.setSpacing(10)
+        self._grid.setContentsMargins(20, 8, 20, 20)
 
-        self.scroll.setWidget(self._grid_container)
-        root.addWidget(self.scroll)
+        self._scroll.setWidget(self._grid_container)
+        root.addWidget(self._scroll)
 
-        # Empty state
-        self.empty_label = QLabel("Run clustering to see results here.")
-        self.empty_label.setObjectName("emptyState")
-        self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        root.addWidget(self.empty_label)
+        # Placeholder (shown before results)
+        self._empty = QLabel("Run clustering to see results here.")
+        self._empty.setObjectName("emptyState")
+        self._empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        root.addWidget(self._empty)
 
-        self.scroll.hide()
+        self._scroll.hide()
+
+    # -------------------------------------------------------------------------
+    # Public API
+    # -------------------------------------------------------------------------
 
     def display_cluster(self, items: list, cluster_id):
-        """
-        Clears current grid and populates with images from items.
-
-        Args:
-            items:      list of dicts from ClusterResult.images_for_cluster()
-            cluster_id: int or -1 for noise
-        """
         self._clear_grid()
-        self.empty_label.hide()
-        self.scroll.show()
+        self._empty.hide()
+        self._scroll.show()
 
-        if cluster_id == -1:
-            self.cluster_label.setText(f"Noise  —  {len(items)} images")
-        else:
-            self.cluster_label.setText(
-                f"Cluster {cluster_id}  —  {len(items)} images"
-            )
+        label = "Noise" if cluster_id == -1 else f"Cluster {cluster_id}"
+        self.cluster_label.setText(f"{label}  —  {len(items)} images")
 
-        # Calculate columns based on current widget width
-        available_w = max(self.scroll.viewport().width(), 600)
-        cols = max(1, available_w // (THUMB_SIZE + 16))
+        available_w = max(self._scroll.viewport().width(), 600)
+        cols        = max(1, available_w // (THUMB_SIZE + 22))
 
         for i, item in enumerate(items):
             card = ThumbnailCard(item)
             card.clicked.connect(self.image_clicked.emit)
-            row, col = divmod(i, cols)
-            self._grid.addWidget(card, row, col)
+            self._grid.addWidget(card, *divmod(i, cols))
 
-        # Fill last row with spacers so cards align left
-        last_row_count = len(items) % cols
-        if last_row_count != 0:
-            for j in range(last_row_count, cols):
-                spacer = QWidget()
-                spacer.setFixedSize(THUMB_SIZE + 8, THUMB_SIZE + 28)
-                row = len(items) // cols
-                self._grid.addWidget(spacer, row, j)
+        # Invisible spacers to left-align last row
+        remainder = len(items) % cols
+        if remainder:
+            last_row = len(items) // cols
+            for j in range(remainder, cols):
+                sp = QWidget()
+                sp.setFixedSize(THUMB_SIZE + 12, THUMB_SIZE + 32)
+                self._grid.addWidget(sp, last_row, j)
 
-        self.scroll.verticalScrollBar().setValue(0)
-        self._current_cluster = cluster_id
+        self._scroll.verticalScrollBar().setValue(0)
 
     def show_empty(self, message: str = "Run clustering to see results here."):
         self._clear_grid()
-        self.scroll.hide()
+        self._scroll.hide()
         self.cluster_label.setText("")
-        self.empty_label.setText(message)
-        self.empty_label.show()
+        self._empty.setText(message)
+        self._empty.show()
+
+    # -------------------------------------------------------------------------
+    # Internal
+    # -------------------------------------------------------------------------
 
     def _clear_grid(self):
-        """Remove all widgets from the grid layout."""
         while self._grid.count():
             item = self._grid.takeAt(0)
             if item.widget():

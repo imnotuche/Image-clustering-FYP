@@ -1,15 +1,3 @@
-"""
-main.py — Entry point for the DINO Image Clustering UI
-
-Run from the project root:
-    python main.py
-
-Requirements:
-    pip install PySide6
-
-Everything else (torch, umap-learn, hdbscan, etc.) is already in your
-venv from the pipeline setup.
-"""
 import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
