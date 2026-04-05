@@ -8,8 +8,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 import torch
 from torch.utils.data import Dataset
 from datetime import datetime, timezone
-from registry_loader import Registry
-from config_loader import Config
+from dino_hdbscan.registry_loader import Registry
+from dino_hdbscan.config_loader import Config
 
 class DataManager:
     
@@ -26,12 +26,14 @@ class DataManager:
         self.batch_size = batch_size
         self.device = device
         
-        # Standard ResNet normalization
+        # Standard DINO normalization
         self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                std=[0.229, 0.224, 0.225]
+            transforms.Normalize(
+                [0.485, 0.456, 0.406],
+                [0.229, 0.224, 0.225]
             )
         ])
         
@@ -48,9 +50,9 @@ class DataManager:
         root_directories=list(self.config.get("paths").values())
         
         for path in root_directories:
-            if not os.path.exists(path):
-                os.mkdir(f"./{path}")
-                print(f"Created missing directory: {path}")
+            if not os.path.exists(f"{path}/{self.name}"):
+                os.mkdir(f"./{path}/{self.name}")
+                print(f"Created missing directory: {path}/{self.name}")
 
     def _load_registry(self):
         """
@@ -160,15 +162,25 @@ class DataManager:
         
         else:
             # Dynamically initialize any torchvision dataset (CIFAR10, CIFAR100, STL10, etc.)
-            print(f"Loading {source.__name__} from: {self.path}...")
-            dataset = source(
-                root=self.path, 
-                train=train, 
-                download=True, 
-                transform=self.transform
-            )
+            try:
+                # CIFAR-10, CIFAR-100 use train=True/False
+                dataset = source(
+                    root=self.path,
+                    train=train,
+                    download=True,
+                    transform=self.transform
+                )
+            except TypeError:
+                # STL-10 and others use split= instead of train=
+                split = 'train' if train else 'test'
+                dataset = source(
+                    root=self.path,
+                    split=split,
+                    download=True,
+                    transform=self.transform
+                )
         
-        return DataLoader(dataset, batch_size=self.batch_size, shuffle=shuffle, num_workers=2)  
+        return DataLoader(dataset, batch_size=self.batch_size, shuffle=shuffle, num_workers=0)  
     
     def store_embedding(self, embeddings, name=f"embedding-{datetime.now(timezone.utc).strftime("%d-%m-%Y_%H-%M-%S")}", overwrite=False):
         #path reserved just for embeddings
@@ -191,7 +203,7 @@ class DataManager:
             path_exists=os.path.exists(save_path)
         
         torch.save(embeddings, save_path)
-        print(f"Saved embeddings at {save_path}.")
+        print(f"Saved {name} at {save_path}.")
         
         #update registry
         data={
@@ -200,7 +212,7 @@ class DataManager:
         self.registry.register("embeddings", data)
         print(f"{self.name} registry updated.")
         
-    def load__embedding(self, name):
+    def load_embedding(self, name):
         path=self.registry.get("embeddings", name)
         data = torch.load(path, weights_only=False)
         return data["features"], data["labels"]
@@ -226,7 +238,7 @@ class DataManager:
             path_exists=os.path.exists(save_path)
         
         torch.save(model, save_path)
-        print(f"Saved model at {save_path}.")
+        print(f"Saved {name} at {save_path}.")
         
         #update registry
         data={
@@ -235,9 +247,14 @@ class DataManager:
         self.registry.register("models", data)
         print(f"{self.name} registry updated.")
         
-    def load__model(self, name, device):
+    def load_model(self, name, device=None, path: bool=False):
         path = self.registry.get("models", name)
-        return torch.load(path, map_location=device)
+        
+        if path:
+            return path
+        
+        return torch.load(path, map_location=device, weights_only=False)
+
 class UnlabeledImageDataset(Dataset):
     
     def __init__(self, root_dir, transform=None):

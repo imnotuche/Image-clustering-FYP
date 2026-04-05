@@ -37,41 +37,40 @@ def plot_clusters(features, labels, title):
     plt.show()
 
 
-def plot_cluster_gallery(images, q_probabilities, cluster_id, num_samples=10):
+def plot_cluster_gallery(images, predictions, strengths, cluster_id, num_samples=10):
     """
     Shows the top-N images the model is MOST confident about for a specific cluster.
-    """
-    # 1. Get the confidence scores for the specific cluster column
-    # q_probabilities shape is (N, 10)
-    cluster_scores = q_probabilities[:, cluster_id]
-
-    # 2. Get indices of the highest scores (sorted descending)
-    # argsort goes small to large, so we take the last 'num_samples' and reverse them
-    idxs = np.argsort(cluster_scores)[-num_samples:][::-1]
     
-    # Check if we actually have images (should always be true if data exists)
-    if len(idxs) == 0:
+    predictions: 1D array of cluster labels per image
+    strengths: 1D array of how strongly each point belongs to its assigned cluster
+    """
+
+    # Get indices belonging to this cluster
+    cluster_mask = predictions == cluster_id
+    cluster_indices = np.where(cluster_mask)[0]
+
+    if len(cluster_indices) == 0:
         print(f"No images found for Cluster {cluster_id}")
         return
 
+    # Sort by strength descending, take top num_samples
+    cluster_strengths = strengths[cluster_indices]
+    sorted_order = np.argsort(cluster_strengths)[::-1]
+    top_indices = cluster_indices[sorted_order[:num_samples]]
+
     plt.figure(figsize=(15, 3))
-    for i, idx in enumerate(idxs):
-        # Get the image and convert from (C, H, W) to (H, W, C)
+    for i, idx in enumerate(top_indices):
         img = images[idx].permute(1, 2, 0).numpy()
-        
-        # Denormalize for display
         img = (img - img.min()) / (img.max() - img.min())
-        
-        # Get the confidence percentage for the title
-        confidence = cluster_scores[idx] * 100
-        
-        plt.subplot(1, num_samples, i + 1)
+        confidence = strengths[idx] * 100
+
+        plt.subplot(1, len(top_indices), i + 1)
         plt.imshow(img)
-        plt.title(f"{confidence:.1f}%", fontsize=10) # Show how sure the model is
+        plt.title(f"{confidence:.1f}%", fontsize=10)
         plt.axis('off')
         if i == 0:
             plt.ylabel(f"Cluster {cluster_id}", fontsize=12, fontweight='bold')
-    
-    plt.suptitle(f"Top {num_samples} Most Confident Images for Cluster {cluster_id}", fontsize=14, y=1.05)
+
+    plt.suptitle(f"Top {len(top_indices)} Most Confident Images — Cluster {cluster_id}", fontsize=14, y=1.05)
     plt.tight_layout()
     plt.show()
