@@ -152,8 +152,6 @@ class PipelineWorker(QThread):
             self.progress.emit("Validating inputs...")
             if not Path(cfg.image_folder).is_dir():
                 raise NotADirectoryError(f"Image folder not found: {cfg.image_folder}")
-            if not Path(cfg.umap_model_path).exists():
-                raise FileNotFoundError(f"UMAP model not found: {cfg.umap_model_path}")
             if not Path(cfg.head_weights_path).exists():
                 raise FileNotFoundError(f"Projection head weights not found: {cfg.head_weights_path}")
 
@@ -170,9 +168,6 @@ class PipelineWorker(QThread):
                 torch.load(cfg.head_weights_path, map_location="cpu", weights_only=True)
             )
             projection_head.eval()
-
-            self.progress.emit("Loading UMAP model...")
-            reducer = DimensionReducer(model_path=cfg.umap_model_path)
 
             if self._cancelled:
                 return
@@ -207,7 +202,7 @@ class PipelineWorker(QThread):
             self.progress.emit(f"Extracting features for {n_images} images...")
             predictions, raw_images, strengths = run_inference(
                 projection_head=projection_head,
-                dimension_reducer=reducer,
+                dimension_reducer=None,
                 dataloader=loader,
                 dino_extractor=dino,
                 min_cluster_size=min_cluster_size,
@@ -219,6 +214,9 @@ class PipelineWorker(QThread):
                 return
 
             # -- Compute metrics ----------------------------------------------
+            # Re-extract DINO features and project through head, then fit a
+            # fresh UMAP on the projection outputs -- same approach as inference
+            # so silhouette is computed in a consistent coordinate space.
             self.progress.emit("Computing silhouette score...")
             projection_head.eval()
             all_dino = []
@@ -228,7 +226,14 @@ class PipelineWorker(QThread):
 
             with torch.no_grad():
                 proj_np = projection_head(torch.tensor(dino_np)).numpy()
-            reduced = reducer.transform(proj_np)
+
+            metrics_reducer = DimensionReducer(
+                n_components=50,
+                n_neighbors=30,
+                min_dist=0.0,
+                model_path=None     # no disk writes
+            )
+            reduced = metrics_reducer.fit_transform(proj_np)
 
             metrics = evaluate_clustering(
                 features=reduced, predicted_labels=predictions
