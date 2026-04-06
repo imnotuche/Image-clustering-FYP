@@ -43,9 +43,10 @@ class DimensionReducer:
 
         reduced = self.reducer.fit_transform(features)
 
-        # Save fitted model
-        joblib.dump(self.reducer, self.model_path)
-        print(f"UMAP model saved to {self.model_path}")
+        # Save fitted model (skipped when model_path is None, e.g. inference-time fresh fits)
+        if self.model_path is not None:
+            joblib.dump(self.reducer, self.model_path)
+            print(f"UMAP model saved to {self.model_path}")
 
         return reduced  # (N, n_components)
 

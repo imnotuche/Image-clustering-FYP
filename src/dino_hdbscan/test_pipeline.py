@@ -118,7 +118,13 @@ def main():
     with torch.no_grad():
         proj_feats = projection_head_gpu(test_features_inf.to(DEVICE)).cpu().numpy()
 
-    reduced_test = reducer.transform(proj_feats)
+    batch_reducer = DimensionReducer(
+        n_components=50,
+        n_neighbors=30,
+        min_dist=0.0,
+        model_path=None
+    )
+    reduced_test = batch_reducer.fit_transform(proj_feats)
 
     metrics = evaluate_clustering(
         features=reduced_test,

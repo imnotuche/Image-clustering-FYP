@@ -104,8 +104,16 @@ def run_inference(
     with torch.no_grad():
         proj_features = projection_head(features_t).cpu().numpy()   # (N, 128)
 
-    # -- UMAP transform -------------------------------------------------------
-    reduced = dimension_reducer.transform(proj_features)   # (N, 50)
+    # -- Fresh UMAP fit on this batch -----------------------------------------
+    # A new DimensionReducer is instantiated per call so inference never
+    # touches or overwrites the saved training/inference UMAP models on disk.
+    batch_reducer = DimensionReducer(
+        n_components=50,
+        n_neighbors=30,
+        min_dist=0.0,
+        model_path=None     # no disk writes
+    )
+    reduced = batch_reducer.fit_transform(proj_features)   # (N, 50)
 
     # -- Fresh HDBSCAN on this batch ------------------------------------------
     print("Fitting HDBSCAN on this batch...")
