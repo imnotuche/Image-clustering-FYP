@@ -399,16 +399,90 @@ python -m dino_hdbscan.run_custom
 
 Clusters any folder of images using trained models and saves per-cluster galleries to `./results/galleries_custom/`.
 
-**Desktop UI**
+**Desktop UI — Interactive Image Clustering**
 ```bash
 python -m dino_hdbscan.main
 ```
 
-Launches an interactive PySide6 Qt application from the project root for:
-- Loading custom image folders
-- Real-time clustering visualization
-- Interactive parameter tuning
-- Cluster gallery generation
+Launches an interactive PySide6 Qt application from the project root for real-time clustering visualization and parameter tuning.
+
+#### GUI Quick Start
+
+**Step 1: Launch the Application**
+```bash
+python -m dino_hdbscan.main
+```
+
+This opens the **XCluster** desktop UI with:
+- Left sidebar: folder selection, run controls, and advanced parameters
+- Right panel: statistics, cluster list, and image gallery
+
+**Step 2: Select Images to Cluster**
+1. Click the **Browse** button in the sidebar
+2. Navigate to your image folder (folder must contain `.jpg`, `.png`, `.jpeg`, or `.bmp` images)
+3. **Recommended test folder**: `./data/stl10_test_input/` (pre-populated with 200+ diverse images)
+4. Click **Select Folder** to confirm
+
+**Step 3: Configure (Optional)**
+- **Batch Size** (default: 16) — Reduce if you have limited GPU memory
+- **Min Samples** (default: 2) — Lower values create more clusters; increase for fewer, larger clusters
+
+**Step 4: Run Clustering**
+1. Click the **Run Clustering** button
+2. The UI will show progress: *"Extracting features..."* → *"Reducing dimensions..."* → *"Clustering..."*
+3. When complete, the UI displays:
+   - **Cluster statistics**: Total clusters found, noise images
+   - **Cluster list**: Interactive chips showing each cluster (clickable)
+   - **Image gallery**: Shows images from selected cluster with confidence scores
+
+**Step 5: Explore Results**
+- Click any cluster chip to view its images (sorted by confidence)
+- Use the **Export Results** button to save cluster galleries as PNGs to `./results/galleries_custom/`
+
+#### Test Images: Pre-Built Test Set
+
+A **pre-built test set** is included in `./data/stl10_test_input/` with 200+ real-world images from diverse categories:
+- **airplane** (18 images), **bird** (18), **bucket** (18), **car** (16), **cat** (15), **deer** (14), **dog** (18), **horse** (17), **monkey** (16), **ship** (13), **truck** (19)
+
+**To use for GUI testing:**
+1. Launch GUI: `python -m dino_hdbscan.main`
+2. Click **Browse** → navigate to `./data/stl10_test_input`
+3. Click **Run Clustering**
+4. The pipeline should find ~10 clusters (one per object category)
+
+#### Generating Custom Test Images with `test_images_downloader.py`
+
+The `test_images_downloader.py` script downloads real-world images and populates `./data/stl10_test_input/` automatically. This is useful for:
+- **Testing on different image categories** — Edit search terms to test non-STL10 concepts
+- **Validating transfer learning** — Does the pipeline cluster objects it was never trained on?
+
+**How to use:**
+```bash
+python src/dino_hdbscan/test_images_downloader.py
+```
+
+This downloads 20 images for each of 10 search terms from **LoremFlickr** (a reliable free image service) and saves them to `./data/stl10_test_input/`. The script is idempotent — re-running skips existing images.
+
+**To test different image types:**
+1. Open `src/dino_hdbscan/test_images_downloader.py`
+2. Find this section:
+   ```python
+   search_terms = ["airplane", "bird", "car", "cat", "deer", "dog", "horse", "monkey", "ship", "truck"]
+   ```
+3. Edit `search_terms` to any object categories you want to test (e.g., `["dog", "cat", "chair", "table", "laptop"]`)
+4. Run the script:
+   ```bash
+   python src/dino_hdbscan/test_images_downloader.py
+   ```
+5. Images are saved with filenames: `IMG_<date>_<search_term>_<index>.jpg`
+6. Open the GUI and test clustering on your new images to see if the pipeline can cluster objects beyond STL-10!
+
+**Example Custom Test:**
+```python
+# Modify search_terms in test_images_downloader.py:
+search_terms = ["laptop", "mouse", "keyboard", "monitor", "desk"]
+# Then run the script and test in the GUI to see clustering on office equipment
+```
 
 **Configuration**: Edit constants in `src/dino_hdbscan/run_pipeline.py` (DEVICE, BATCH_SIZE, EPOCHS, LR, UMAP_DIMS, MIN_CLUSTER_SIZE, KNN_K).
 
